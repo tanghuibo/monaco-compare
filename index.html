@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>compare-tool</title>
+    <script>
+      let monacoMounted = false;
+
+      function createScript(url, callback) {
+        var oScript = document.createElement("script");
+        oScript.type = "text/javascript";
+        oScript.async = true;
+        oScript.src = url;
+        var isIE = !-[1];
+        if (isIE) {
+          alert("IE");
+          oScript.onreadystatechange = function () {
+            if (this.readyState == "loaded" || this.readyState == "complete") {
+              callback();
+            }
+          };
+        } else {
+          // IE9及以上浏览器，Firefox，Chrome，Opera
+          oScript.onload = function () {
+            callback();
+          };
+        }
+        document.body.appendChild(oScript);
+      }
+
+      let promise = null;
+      const mountMonaco = () => {
+        if (monacoMounted || window.monaco) {
+          return promise;
+        }
+        promise = new Promise((resolve) => {
+          monacoMounted = true;
+
+          createScript(
+            "http://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs/loader.min.js",
+            function () {
+              window.require.config({
+                paths: {
+                  vs: "http://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs",
+                },
+              });
+              window.require(["vs/editor/editor.main"], function () {
+                resolve(!!window.monaco);
+              });
+            }
+          );
+        });
+        return promise;
+      };
+
+      window.onload = () => {
+        mountMonaco().then(() => {
+          const diffEditor = monaco.editor.createDiffEditor(
+            document.getElementById("monaco-compare"),
+            {
+              readOnly: false,
+              originalEditable: true,
+              automaticLayout: true,
+            }
+          );
+          diffEditor.setModel({
+            original: monaco.editor.createModel("", "text/plain"),
+            modified: monaco.editor.createModel("", "text/plain"),
+          });
+        });
+      };
+    </script>
+  </head>
+  <body>
+    <div id="monaco-compare" style="height: calc(100vh - 20px)"></div>
+  </body>
+</html>
